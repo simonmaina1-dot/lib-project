@@ -4,7 +4,11 @@
         "author": "Chinua Achebe",
         "isbn": "9780435905255",
         "total_copies": 5,
-        "available_copies": 3
+        "available_copies": 3,
+        "borrowed_copies": 0,
+        "borrowed_by": [],
+        "is_available": true,
+        "is_borrowed": false
     },
     {
         "title": "Half of a Yellow Sun",
