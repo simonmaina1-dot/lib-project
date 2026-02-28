@@ -1,0 +1,32 @@
+[
+    {
+        "username": "admin1",
+        "password": "REPLACE_WITH_HASH_OF_lib2026!",
+        "role": "admin"
+    },
+    {
+        "username": "librarian1",
+        "password": "REPLACE_WITH_HASH_OF_lib2026!",
+        "role": "librarian"
+    },
+    {
+        "username": "simon",
+        "password": "REPLACE_WITH_HASH_OF_lib2026!",
+        "role": "member"
+    },
+    {
+        "username": "aisha",
+        "password": "REPLACE_WITH_HASH_OF_lib2026!",
+        "role": "member"
+    },
+    {
+        "username": "kwame",
+        "password": "REPLACE_WITH_HASH_OF_lib2026!",
+        "role": "member"
+    },
+    {
+        "username": "simon",
+        "password": "b42010eb4b0b03c87462ceca2981ccc24af1c2ad6fa8ee303ffac093be2c7cee",
+        "role": "admin"
+    }
+]
