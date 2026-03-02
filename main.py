@@ -2,100 +2,54 @@
 """
 Library Management System - CLI Entry Point
 
-A fully functional Python CLI application for managing a library system.
-Features:
-- User authentication with role-based access
-- Book management (add, delete, list, search)
-- Borrow/return functionality
-- Persistent JSON storage
+A simple Python CLI application for managing a library system.
 """
 
 import sys
 import os
-import argparse
-from typing import Optional
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from services.auth_service import register, login, get_user_by_username
+from services.auth_service import register, login
 from services.book_service import (
     add_book, list_books, delete_book, search_book,
-    borrow_book as br_borrow_book, return_book as br_return_book
+    borrow_book, return_book
 )
 
 
-# Try to import rich for better CLI output
-try:
-    from rich.console import Console
-    from rich.table import Table
-    from rich import print as rprint
-    RICH_AVAILABLE = True
-    console = Console()
-except ImportError:
-    RICH_AVAILABLE = False
-    console = None
-
-
 # Global state
-current_user: Optional[dict] = None
+current_user = None
 
 
-def print_success(message: str):
+def print_success(message):
     """Print success message."""
-    if RICH_AVAILABLE:
-        rprint(f"[green]✓[/green] {message}")
-    else:
-        print(f"✓ {message}")
+    print(f"SUCCESS: {message}")
 
 
-def print_error(message: str):
+def print_error(message):
     """Print error message."""
-    if RICH_AVAILABLE:
-        rprint(f"[red]✗[/red] {message}")
-    else:
-        print(f"✗ {message}")
+    print(f"ERROR: {message}")
 
 
-def print_info(message: str):
+def print_info(message):
     """Print info message."""
-    if RICH_AVAILABLE:
-        rprint(f"[blue]ℹ[/blue] {message}")
-    else:
-        print(f"ℹ {message}")
+    print(f"INFO: {message}")
 
 
-def display_books(books: list, title: str = "Book List"):
-    """Display books in a formatted table."""
+def display_books(books, title="Book List"):
+    """Display books in a simple format."""
     if not books:
         print_info("No books found.")
         return
     
-    if RICH_AVAILABLE:
-        table = Table(title=title, show_header=True, header_style="bold magenta")
-        table.add_column("Title", style="cyan")
-        table.add_column("Author", style="green")
-        table.add_column("ISBN", style="yellow")
-        table.add_column("Available", justify="center")
-        table.add_column("Total", justify="center")
-        
-        for book in books:
-            table.add_row(
-                book.get('title', 'N/A'),
-                book.get('author', 'N/A'),
-                book.get('isbn', 'N/A'),
-                str(book.get('available_copies', 0)),
-                str(book.get('total_copies', 0))
-            )
-        
-        console.print(table)
-    else:
-        print(f"\n--- {title} ---")
-        for book in books:
-            print(f"Title: {book.get('title', 'N/A')}, "
-                  f"Author: {book.get('author', 'N/A')}, "
-                  f"ISBN: {book.get('isbn', 'N/A')}, "
-                  f"Available: {book.get('available_copies', 0)}")
+    print(f"\n--- {title} ---")
+    for book in books:
+        print(f"Title: {book.get('title', 'N/A')}")
+        print(f"  Author: {book.get('author', 'N/A')}")
+        print(f"  ISBN: {book.get('isbn', 'N/A')}")
+        print(f"  Available: {book.get('available_copies', 0)}")
+        print()
 
 
 def handle_register(args):
@@ -153,7 +107,7 @@ def handle_search_book(args):
 
 def handle_borrow_book(args):
     """Handle borrowing a book."""
-    result = br_borrow_book(args.username, args.isbn)
+    result = borrow_book(args.username, args.isbn)
     if result.get('success'):
         print_success(result.get('message'))
     else:
@@ -162,7 +116,7 @@ def handle_borrow_book(args):
 
 def handle_return_book(args):
     """Handle returning a book."""
-    result = br_return_book(args.username, args.isbn)
+    result = return_book(args.username, args.isbn)
     if result.get('success'):
         print_success(result.get('message'))
     else:
@@ -202,12 +156,12 @@ def interactive_mode():
             username = input("Enter username: ").strip()
             password = input("Enter password: ").strip()
             role = input("Enter role (admin/librarian/student): ").strip().lower()
-            handle_register(argparse.Namespace(username=username, password=password, role=role))
+            handle_register(type('obj', (object,), {'username': username, 'password': password, 'role': role})())
         
         elif choice == "2":
             username = input("Enter username: ").strip()
             password = input("Enter password: ").strip()
-            handle_login(argparse.Namespace(username=username, password=password))
+            handle_login(type('obj', (object,), {'username': username, 'password': password})())
         
         elif choice == "3":
             if not current_user:
@@ -219,23 +173,23 @@ def interactive_mode():
             copies = input("Enter number of copies: ").strip()
             try:
                 copies = int(copies)
-                handle_add_book(argparse.Namespace(title=title, author=author, isbn=isbn, copies=copies))
+                handle_add_book(type('obj', (object,), {'title': title, 'author': author, 'isbn': isbn, 'copies': copies})())
             except ValueError:
                 print_error("Invalid number of copies.")
         
         elif choice == "4":
-            handle_list_books(argparse.Namespace())
+            handle_list_books(type('obj', (object,), {})())
         
         elif choice == "5":
             if not current_user:
                 print_error("Please login first.")
                 continue
             isbn = input("Enter ISBN to delete: ").strip()
-            handle_delete_book(argparse.Namespace(isbn=isbn))
+            handle_delete_book(type('obj', (object,), {'isbn': isbn})())
         
         elif choice == "6":
             query = input("Enter book title to search: ").strip()
-            handle_search_book(argparse.Namespace(query=query))
+            handle_search_book(type('obj', (object,), {'query': query})())
         
         elif choice == "7":
             if not current_user:
@@ -243,7 +197,7 @@ def interactive_mode():
                 continue
             isbn = input("Enter ISBN to borrow: ").strip()
             username = current_user['username']
-            handle_borrow_book(argparse.Namespace(username=username, isbn=isbn))
+            handle_borrow_book(type('obj', (object,), {'username': username, 'isbn': isbn})())
         
         elif choice == "8":
             if not current_user:
@@ -251,7 +205,7 @@ def interactive_mode():
                 continue
             isbn = input("Enter ISBN to return: ").strip()
             username = current_user['username']
-            handle_return_book(argparse.Namespace(username=username, isbn=isbn))
+            handle_return_book(type('obj', (object,), {'username': username, 'isbn': isbn})())
         
         elif choice == "9":
             current_user = None
@@ -267,88 +221,149 @@ def interactive_mode():
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Library Management System CLI",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s register --username john --password secret123 --role student
-  %(prog)s login --username john --password secret123
-  %(prog)s add-book --title "Python Basics" --author "John Doe" --isbn 1234567890 --copies 5
-  %(prog)s list-books
-  %(prog)s search-book --query "Python"
-  %(prog)s delete-book --isbn 1234567890
-  %(prog)s borrow-book --username john --isbn 1234567890
-  %(prog)s return-book --username john --isbn 1234567890
-        """
-    )
-    
-    # Create subparsers
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
-    
-    # Register command
-    register_parser = subparsers.add_parser('register', help='Register a new user')
-    register_parser.add_argument('--username', required=True, help='Username')
-    register_parser.add_argument('--password', required=True, help='Password')
-    register_parser.add_argument('--role', required=True, choices=['admin', 'librarian', 'student'], help='User role')
-    
-    # Login command
-    login_parser = subparsers.add_parser('login', help='Login to the system')
-    login_parser.add_argument('--username', required=True, help='Username')
-    login_parser.add_argument('--password', required=True, help='Password')
-    
-    # Add book command
-    add_parser = subparsers.add_parser('add-book', help='Add a new book')
-    add_parser.add_argument('--title', required=True, help='Book title')
-    add_parser.add_argument('--author', required=True, help='Book author')
-    add_parser.add_argument('--isbn', required=True, help='Book ISBN')
-    add_parser.add_argument('--copies', type=int, required=True, help='Number of copies')
-    
-    # List books command
-    list_parser = subparsers.add_parser('list-books', help='List all books')
-    
-    # Delete book command
-    delete_parser = subparsers.add_parser('delete-book', help='Delete a book')
-    delete_parser.add_argument('--isbn', required=True, help='Book ISBN')
-    
-    # Search book command
-    search_parser = subparsers.add_parser('search-book', help='Search for a book')
-    search_parser.add_argument('--query', required=True, help='Search query')
-    
-    # Borrow book command
-    borrow_parser = subparsers.add_parser('borrow-book', help='Borrow a book')
-    borrow_parser.add_argument('--username', required=True, help='Username')
-    borrow_parser.add_argument('--isbn', required=True, help='Book ISBN')
-    
-    # Return book command
-    return_parser = subparsers.add_parser('return-book', help='Return a book')
-    return_parser.add_argument('--username', required=True, help='Username')
-    return_parser.add_argument('--isbn', required=True, help='Book ISBN')
-    
-    args = parser.parse_args()
-    
-    # If no command, run interactive mode
-    if not args.command:
+    # Check if any command line arguments were given
+    if len(sys.argv) == 1:
+        # No arguments, run interactive mode
         interactive_mode()
         return
     
+    # Parse command line arguments manually
+    command = None
+    args = {}
+    
+    i = 1
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        
+        if arg == 'register':
+            command = 'register'
+            i += 1
+            while i < len(sys.argv) and not sys.argv[i].startswith('--'):
+                i += 1
+            while i < len(sys.argv):
+                if sys.argv[i] == '--username':
+                    args['username'] = sys.argv[i+1]
+                    i += 2
+                elif sys.argv[i] == '--password':
+                    args['password'] = sys.argv[i+1]
+                    i += 2
+                elif sys.argv[i] == '--role':
+                    args['role'] = sys.argv[i+1]
+                    i += 2
+                else:
+                    i += 1
+        elif arg == 'login':
+            command = 'login'
+            i += 1
+            while i < len(sys.argv):
+                if sys.argv[i] == '--username':
+                    args['username'] = sys.argv[i+1]
+                    i += 2
+                elif sys.argv[i] == '--password':
+                    args['password'] = sys.argv[i+1]
+                    i += 2
+                else:
+                    i += 1
+        elif arg == 'add-book':
+            command = 'add-book'
+            i += 1
+            while i < len(sys.argv):
+                if sys.argv[i] == '--title':
+                    args['title'] = sys.argv[i+1]
+                    i += 2
+                elif sys.argv[i] == '--author':
+                    args['author'] = sys.argv[i+1]
+                    i += 2
+                elif sys.argv[i] == '--isbn':
+                    args['isbn'] = sys.argv[i+1]
+                    i += 2
+                elif sys.argv[i] == '--copies':
+                    args['copies'] = int(sys.argv[i+1])
+                    i += 2
+                else:
+                    i += 1
+        elif arg == 'list-books':
+            command = 'list-books'
+            i += 1
+        elif arg == 'delete-book':
+            command = 'delete-book'
+            i += 1
+            while i < len(sys.argv):
+                if sys.argv[i] == '--isbn':
+                    args['isbn'] = sys.argv[i+1]
+                    i += 2
+                else:
+                    i += 1
+        elif arg == 'search-book':
+            command = 'search-book'
+            i += 1
+            while i < len(sys.argv):
+                if sys.argv[i] == '--query':
+                    args['query'] = sys.argv[i+1]
+                    i += 2
+                else:
+                    i += 1
+        elif arg == 'borrow-book':
+            command = 'borrow-book'
+            i += 1
+            while i < len(sys.argv):
+                if sys.argv[i] == '--username':
+                    args['username'] = sys.argv[i+1]
+                    i += 2
+                elif sys.argv[i] == '--isbn':
+                    args['isbn'] = sys.argv[i+1]
+                    i += 2
+                else:
+                    i += 1
+        elif arg == 'return-book':
+            command = 'return-book'
+            i += 1
+            while i < len(sys.argv):
+                if sys.argv[i] == '--username':
+                    args['username'] = sys.argv[i+1]
+                    i += 2
+                elif sys.argv[i] == '--isbn':
+                    args['isbn'] = sys.argv[i+1]
+                    i += 2
+                else:
+                    i += 1
+        else:
+            i += 1
+    
+    # Create args object
+    args_obj = type('obj', (object,), args)()
+    
     # Handle commands
-    if args.command == 'register':
-        handle_register(args)
-    elif args.command == 'login':
-        handle_login(args)
-    elif args.command == 'add-book':
-        handle_add_book(args)
-    elif args.command == 'list-books':
-        handle_list_books(args)
-    elif args.command == 'delete-book':
-        handle_delete_book(args)
-    elif args.command == 'search-book':
-        handle_search_book(args)
-    elif args.command == 'borrow-book':
-        handle_borrow_book(args)
-    elif args.command == 'return-book':
-        handle_return_book(args)
+    if command == 'register':
+        handle_register(args_obj)
+    elif command == 'login':
+        handle_login(args_obj)
+    elif command == 'add-book':
+        handle_add_book(args_obj)
+    elif command == 'list-books':
+        handle_list_books(args_obj)
+    elif command == 'delete-book':
+        handle_delete_book(args_obj)
+    elif command == 'search-book':
+        handle_search_book(args_obj)
+    elif command == 'borrow-book':
+        handle_borrow_book(args_obj)
+    elif command == 'return-book':
+        handle_return_book(args_obj)
+    else:
+        # No valid command, show help
+        print("Library Management System CLI")
+        print("")
+        print("Usage:")
+        print("  python main.py                      # Run in interactive mode")
+        print("  python main.py register --username USER --password PASS --role ROLE")
+        print("  python main.py login --username USER --password PASS")
+        print("  python main.py add-book --title TITLE --author AUTHOR --isbn ISBN --copies N")
+        print("  python main.py list-books")
+        print("  python main.py delete-book --isbn ISBN")
+        print("  python main.py search-book --query QUERY")
+        print("  python main.py borrow-book --username USER --isbn ISBN")
+        print("  python main.py return-book --username USER --isbn ISBN")
 
 
 if __name__ == "__main__":
